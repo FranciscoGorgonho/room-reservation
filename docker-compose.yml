@@ -1,0 +1,15 @@
+# Alternativa ao PostgreSQL embutido de `npm run dev`, para rodar como em produção.
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: reservas
+      POSTGRES_PASSWORD: reservas
+      POSTGRES_DB: reservas
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql
+
+volumes:
+  pgdata:
