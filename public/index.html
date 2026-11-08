@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reserva de salas</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="top">
+      <h1>Reserva de salas</h1>
+      <label class="who">
+        Pessoa nº
+        <input id="user" type="number" min="1" max="50000" value="1" inputmode="numeric" />
+      </label>
+    </header>
+
+    <main class="layout">
+      <aside class="panel rooms">
+        <label class="field">
+          <span>Buscar sala ou cidade</span>
+          <input id="search" type="search" placeholder="Curitiba, Sala 0042…" autocomplete="off" />
+        </label>
+        <ul id="room-list" class="room-list"></ul>
+      </aside>
+
+      <section class="panel agenda" aria-labelledby="room-title">
+        <div class="agenda-head">
+          <div>
+            <h2 id="room-title">Escolha uma sala</h2>
+            <p id="room-meta" class="muted"></p>
+          </div>
+          <div class="date-nav">
+            <button id="prev-day" type="button" aria-label="Dia anterior">‹</button>
+            <input id="date" type="date" aria-label="Data" />
+            <button id="next-day" type="button" aria-label="Próximo dia">›</button>
+          </div>
+        </div>
+
+        <div id="result" class="result" role="status" hidden></div>
+
+        <div id="slots" class="slots"></div>
+        <p id="freshness" class="muted small"></p>
+
+        <div id="confirm-bar" class="confirm-bar" hidden>
+          <p id="selection-text"></p>
+          <button id="confirm" type="button" class="primary">Confirmar reserva</button>
+        </div>
+      </section>
+
+      <aside class="side">
+        <section class="panel">
+          <h2>Minhas reservas</h2>
+          <ul id="mine" class="mine"></ul>
+        </section>
+
+        <section id="lab" class="panel lab" hidden>
+          <h2>Laboratório</h2>
+          <p class="muted small">Só em modo de demonstração.</p>
+
+          <h3>Disputa pelo horário</h3>
+          <p class="small">Selecione um horário livre e faça 50 pessoas tentarem ao mesmo tempo.</p>
+          <button id="race" type="button" disabled>Disparar 50 tentativas</button>
+          <p id="race-result" class="small race-result" role="status"></p>
+
+          <h3>Provedor de e-mail</h3>
+          <label class="switch">
+            <input id="email-down" type="checkbox" />
+            Simular indisponibilidade
+          </label>
+          <dl class="counters">
+            <div><dt>Na fila</dt><dd id="count-pending">0</dd></div>
+            <div><dt>Enviados</dt><dd id="count-sent">0</dd></div>
+          </dl>
+          <ul id="emails" class="emails small"></ul>
+        </section>
+      </aside>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
