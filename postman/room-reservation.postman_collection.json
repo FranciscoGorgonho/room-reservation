@@ -1,0 +1,176 @@
+{
+  "info": {
+    "name": "room-reservation",
+    "description": "Percorre o ciclo completo da API: consulta, confirmação, nova tentativa, conflito e cancelamento. Requer `npm run dev` em execução.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://127.0.0.1:3000" }],
+  "item": [
+    {
+      "name": "Saúde da API",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/health" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('API no ar', () => pm.response.to.have.status(200));"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buscar salas",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/rooms?q=Curitiba" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('encontra salas', () => pm.expect(pm.response.json().rooms.length).to.be.above(0));",
+              "pm.collectionVariables.set('roomId', pm.response.json().rooms[0].id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Confirmar reserva",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const start = new Date(Date.now() + 100 * 86400000 + Math.floor(Math.random() * 1e6) * 3600000);",
+              "start.setUTCMinutes(0, 0, 0);",
+              "pm.collectionVariables.set('start', start.toISOString());",
+              "pm.collectionVariables.set('end', new Date(start.getTime() + 3600000).toISOString());",
+              "pm.collectionVariables.set('key', pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('201 confirmada', () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set('reservationId', pm.response.json().reservation.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/reservations",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-User-Id", "value": "1" },
+          { "key": "Idempotency-Key", "value": "{{key}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"roomId\": {{roomId}}, \"start\": \"{{start}}\", \"end\": \"{{end}}\" }"
+        }
+      }
+    },
+    {
+      "name": "Repetir com a mesma chave",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 e mesma reserva', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().reservation.id).to.eql(pm.collectionVariables.get('reservationId'));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/reservations",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-User-Id", "value": "1" },
+          { "key": "Idempotency-Key", "value": "{{key}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"roomId\": {{roomId}}, \"start\": \"{{start}}\", \"end\": \"{{end}}\" }"
+        }
+      }
+    },
+    {
+      "name": "Outra pessoa tenta o mesmo horário",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('409 e resposta definitiva', () => {",
+              "  pm.response.to.have.status(409);",
+              "  pm.expect(pm.response.json().error.outcome).to.eql('not_reserved');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/reservations",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-User-Id", "value": "2" },
+          { "key": "Idempotency-Key", "value": "{{$guid}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"roomId\": {{roomId}}, \"start\": \"{{start}}\", \"end\": \"{{end}}\" }"
+        }
+      }
+    },
+    {
+      "name": "Cancelar",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('cancelada', () => pm.expect(pm.response.json().reservation.status).to.eql('cancelled'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel",
+        "header": [{ "key": "X-User-Id", "value": "1" }]
+      }
+    },
+    {
+      "name": "Horário liberado para a outra pessoa",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('201 confirmada', () => pm.response.to.have.status(201));"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/reservations",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-User-Id", "value": "2" },
+          { "key": "Idempotency-Key", "value": "{{$guid}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"roomId\": {{roomId}}, \"start\": \"{{start}}\", \"end\": \"{{end}}\" }"
+        }
+      }
+    }
+  ]
+}
